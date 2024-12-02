@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  clerkUserId String @unique
+  email       String @unique
+  Room        Room[]
+}
+
+model Room {
+  id          String   @id @default(cuid())
+  title       String
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [clerkUserId])
+  description String
+  isPrivate   Boolean  @default(false)
+  shareWith   String[]
+  Music       Music[]
+}
+
+model Music {
+  id     Int    @id @default(autoincrement())
+  url    String
+  order  Int    @default(0)
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id])
+}
