@@ -7,7 +7,7 @@ export default function handleSocketConnection() {
             if(data && data.email && data.roomId){
                 socket.join(data.email);
                 console.log(`${data.email} has joined room ${data.roomId}`)
-                connectedClients.set(data.email,1);
+                connectedClients.set(socket.id,data.email);
             }
 
             socket.on("disconnect",() => {
