@@ -23,8 +23,10 @@ import {
 import { BackgroundGradient } from "@/components/ui/background-gradient";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import { useSocket } from "@/context/SocketContext";
 
 const RoomPage = () => {
+  const socket = useSocket();
   const { roomid } = useParams();
   const [musicLink, setMusicLink] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,6 +45,18 @@ const RoomPage = () => {
   useEffect(() => {
     handleVerifyUser();
   }, []);
+
+  useEffect(() => {
+    if (!socket) {
+      return;
+    }
+    if (user) {
+      socket.emit("join_room_user", {
+        email: user?.primaryEmailAddress?.emailAddress,
+        roomId: roomid,
+      });
+    }
+  }, [socket , user]);
 
   async function handleVerifyUser() {
     try {
