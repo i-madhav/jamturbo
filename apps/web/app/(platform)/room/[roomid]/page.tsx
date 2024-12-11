@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -24,6 +24,7 @@ import { BackgroundGradient } from "@/components/ui/background-gradient";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useSocket } from "@/context/SocketContext";
+import { Item } from "@radix-ui/react-dropdown-menu";
 
 const RoomPage = () => {
   const socket = useSocket();
@@ -38,10 +39,10 @@ const RoomPage = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentMessage, setCurrentMessage] = useState("");
   const [newUser, setNewUser] = useState("");
-  const [participants, setParticipants] = useState(["Alice", "Bob", "Charlie"]);
+  const [participants, setParticipants] = useState<string[]>([""]);
   const { user } = useUser();
   const route = useRouter();
-
+  console.log(participants);
   useEffect(() => {
     handleVerifyUser();
   }, []);
@@ -50,13 +51,18 @@ const RoomPage = () => {
     if (!socket) {
       return;
     }
+
     if (user) {
+      socket.on("participant_in_room", (data) => {
+        console.log("Data from socket");
+        setParticipants(data);
+      });
       socket.emit("join_room_user", {
         email: user?.primaryEmailAddress?.emailAddress,
         roomId: roomid,
       });
     }
-  }, [socket , user]);
+  }, [socket, user]);
 
   async function handleVerifyUser() {
     try {
@@ -102,16 +108,10 @@ const RoomPage = () => {
     }
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    if (currentMessage.trim()) {
-      setChatMessages((prev) => [
-        ...prev,
-        { user: "You", message: currentMessage },
-      ]);
-      setCurrentMessage("");
-    }
-  };
+      
+  }, [socket , user]);
 
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,19 +206,28 @@ const RoomPage = () => {
                 </DialogContent>
               </Dialog>
             </div>
-            <div className="flex items-center justify-center text-2xl mb-4">
-              <Users className="mr-2 h-6 w-6 fill-white stroke-white" />
-              <span className="text-white font-bold">
-                {participants.length}
-              </span>
-            </div>
-            <ScrollArea className="h-[150px]">
-              <ul className="space-y-2 text-white">
-                {participants.map((user, index) => (
-                  <li key={index}>{user}</li>
-                ))}
-              </ul>
-            </ScrollArea>
+            {participants && (
+              <div className="flex items-center justify-center text-2xl mb-4">
+                <Users className="mr-2 h-6 w-6 fill-white stroke-white" />
+                <span className="text-white font-bold">
+                  {participants.length}
+                </span>
+              </div>
+            )}
+
+            {participants && participants.length > 0 ? (
+              <ScrollArea className="h-[150px]">
+                <ul className="space-y-2 text-white">
+                  {participants.map((user, index) => (
+                    <li key={index} className=" text-white font-bold">
+                      {user}
+                    </li>
+                  ))}
+                </ul>
+              </ScrollArea>
+            ) : (
+              <p>No Users Present in the room</p>
+            )}
           </BackgroundGradient>
         </div>
 
