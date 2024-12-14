@@ -31,12 +31,8 @@ const RoomPage = () => {
   const { roomid } = useParams();
   const [musicLink, setMusicLink] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [chatMessages, setChatMessages] = useState([
-    { user: "System", message: "Welcome to Jam!" },
-    { user: "Alice", message: "Hey everyone!" },
-    { user: "Bob", message: "What song should we play next?" },
-  ]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const[chatMessages , setChatMessages] = useState<{user:string , message:string}[]>([]);
   const [currentMessage, setCurrentMessage] = useState("");
   const [newUser, setNewUser] = useState("");
   const [participants, setParticipants] = useState<string[]>([""]);
@@ -57,9 +53,21 @@ const RoomPage = () => {
         console.log("Data from socket");
         setParticipants(data);
       });
+
+      socket.on("live_chat_messages_from_room",(data) =>{
+        console.log("live_chat_messages_from_room");
+        console.log(data);
+        setChatMessages(data);
+      })
+
       socket.emit("join_room_user", {
         email: user?.primaryEmailAddress?.emailAddress,
         roomId: roomid,
+      });
+
+      socket.emit("user_in_room_chat_message", {
+        email: user.primaryEmailAddress?.emailAddress,
+        message: currentMessage,
       });
     }
   }, [socket, user]);
@@ -108,10 +116,16 @@ const RoomPage = () => {
     }
   };
 
-  const handleSendMessage = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-      
-  }, [socket , user]);
+  const handleSendMessage = () => {
+    if (socket && user) {
+      socket.emit("user_in_room_chat_message", {
+        email: user.primaryEmailAddress?.emailAddress,
+        message: currentMessage,
+        roomId:roomid
+      });
+      setCurrentMessage("");
+    }
+  };
 
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,10 +231,10 @@ const RoomPage = () => {
 
             {participants && participants.length > 0 ? (
               <ScrollArea className="h-[150px]">
-                <ul className="space-y-2 text-white">
+                <ul className="space-y-2 text-white w-full">
                   {participants.map((user, index) => (
-                    <li key={index} className=" text-white font-bold">
-                      {user}
+                    <li key={index} className=" text-white text-center font-bold">
+                      {user.split("@")[0]}
                     </li>
                   ))}
                 </ul>
@@ -275,17 +289,15 @@ const RoomPage = () => {
           <BackgroundGradient className="p-4 h-full bg-black">
             <h2 className="text-lg font-semibold mb-2 text-white">Chat</h2>
             <ScrollArea className="h-[300px] mb-4">
-              {chatMessages.map((msg, index) => (
+              {chatMessages.length > 0 ? chatMessages.map((msg, index) => (
                 <div key={index} className="mb-2">
-                  <span className="font-semibold text-white">{msg.user}: </span>
+                  <span className="font-semibold text-white">{msg.user.split("@")[0]}: </span>
                   <span className="text-white">{msg.message}</span>
-                  {index < chatMessages.length - 1 && (
-                    <Separator className="my-2" />
-                  )}
+                  {index < chatMessages.length && <Separator className="my-2" />}
                 </div>
-              ))}
+              )) : <p className=" text-white text-4xl font-semibold  font-mono">No Messages !! Start Messaging fam</p> }
             </ScrollArea>
-            <form onSubmit={handleSendMessage} className="flex gap-2">
+            <div className="flex gap-2">
               <Input
                 type="text"
                 placeholder="Type a message..."
@@ -293,10 +305,14 @@ const RoomPage = () => {
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 className="flex-grow"
               />
-              <Button type="submit" className="bg-[#1DB954]">
+              <Button
+                type="submit"
+                className="bg-[#1DB954]"
+                onClick={() => handleSendMessage()}
+              >
                 <Send className="h-4 w-4" />
               </Button>
-            </form>
+            </div>
           </BackgroundGradient>
         </div>
       </div>
