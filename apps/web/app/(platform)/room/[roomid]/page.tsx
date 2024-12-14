@@ -1,12 +1,11 @@
 "use client";
-
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Users, Send, Play, Pause, Search, UserPlus } from "lucide-react";
+import { Users, Send, Play, Pause, UserPlus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,18 +23,21 @@ import { BackgroundGradient } from "@/components/ui/background-gradient";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useSocket } from "@/context/SocketContext";
-import { Item } from "@radix-ui/react-dropdown-menu";
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 
 const RoomPage = () => {
   const socket = useSocket();
   const { roomid } = useParams();
   const [musicLink, setMusicLink] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
-  const[chatMessages , setChatMessages] = useState<{user:string , message:string}[]>([]);
+  const [chatMessages, setChatMessages] = useState<
+    { user: string; message: string }[]
+  >([]);
   const [currentMessage, setCurrentMessage] = useState("");
   const [newUser, setNewUser] = useState("");
   const [participants, setParticipants] = useState<string[]>([""]);
+  const [playList, setPlayList] = useState();
   const { user } = useUser();
   const route = useRouter();
   console.log(participants);
@@ -54,11 +56,11 @@ const RoomPage = () => {
         setParticipants(data);
       });
 
-      socket.on("live_chat_messages_from_room",(data) =>{
+      socket.on("live_chat_messages_from_room", (data) => {
         console.log("live_chat_messages_from_room");
         console.log(data);
         setChatMessages(data);
-      })
+      });
 
       socket.emit("join_room_user", {
         email: user?.primaryEmailAddress?.emailAddress,
@@ -100,28 +102,61 @@ const RoomPage = () => {
     }
   }
 
-  const handleSubmitLink = (e: React.FormEvent) => {
+  const handleSubmitLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (musicLink.trim()) {
-      console.log("Submitted link:", musicLink);
-      setMusicLink("");
+    try {
+      if (musicLink.length == 0 || !roomid) {
+        return alert("Enter a valid music link");
+      }
+
+      const response = await fetch("/api/submit-link", {
+        method: "POST",
+        headers: {
+          "Content-type": "application/json",
+        },
+        body: JSON.stringify({
+          link: musicLink,
+          roomId: roomid,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          "Unable to submit your link , please try after some other time"
+        );
+      }
+      console.log(response);
+    } catch (error) {
+      console.log(error);
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      console.log("Searching for:", searchQuery);
-      setSearchQuery("");
+  const handleGetMusicList = useCallback(async () => {
+    if (typeof roomid !== "string") {
+      throw new Error("Chal be string laa");
     }
-  };
+    try {
+      const response = await prisma.music.aggregate({
+        where: {
+          roomId: roomid,
+        },
+      });
+      console.log(response);
+    } catch (error) {
+      console.log(error);
+    }
+  }, [playList]);
+
+  useEffect(() => {
+    handleGetMusicList();
+  }, [handleGetMusicList]);
 
   const handleSendMessage = () => {
     if (socket && user) {
       socket.emit("user_in_room_chat_message", {
         email: user.primaryEmailAddress?.emailAddress,
         message: currentMessage,
-        roomId:roomid
+        roomId: roomid,
       });
       setCurrentMessage("");
     }
@@ -177,18 +212,6 @@ const RoomPage = () => {
                 Add
               </Button>
             </form>
-            <form onSubmit={handleSearch} className="flex gap-2">
-              <Input
-                type="text"
-                placeholder="Search for a song"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-grow"
-              />
-              <Button type="submit" className="bg-[#1DB954]">
-                <Search className="h-4 w-4" />
-              </Button>
-            </form>
           </BackgroundGradient>
         </div>
 
@@ -233,7 +256,10 @@ const RoomPage = () => {
               <ScrollArea className="h-[150px]">
                 <ul className="space-y-2 text-white w-full">
                   {participants.map((user, index) => (
-                    <li key={index} className=" text-white text-center font-bold">
+                    <li
+                      key={index}
+                      className=" text-white text-center font-bold"
+                    >
                       {user.split("@")[0]}
                     </li>
                   ))}
@@ -289,13 +315,23 @@ const RoomPage = () => {
           <BackgroundGradient className="p-4 h-full bg-black">
             <h2 className="text-lg font-semibold mb-2 text-white">Chat</h2>
             <ScrollArea className="h-[300px] mb-4">
-              {chatMessages.length > 0 ? chatMessages.map((msg, index) => (
-                <div key={index} className="mb-2">
-                  <span className="font-semibold text-white">{msg.user.split("@")[0]}: </span>
-                  <span className="text-white">{msg.message}</span>
-                  {index < chatMessages.length && <Separator className="my-2" />}
-                </div>
-              )) : <p className=" text-white text-4xl font-semibold  font-mono">No Messages !! Start Messaging fam</p> }
+              {chatMessages.length > 0 ? (
+                chatMessages.map((msg, index) => (
+                  <div key={index} className="mb-2">
+                    <span className="font-semibold text-white">
+                      {msg.user.split("@")[0]}:{" "}
+                    </span>
+                    <span className="text-white">{msg.message}</span>
+                    {index < chatMessages.length && (
+                      <Separator className="my-2" />
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className=" text-white text-4xl font-semibold  font-mono">
+                  No Messages !! Start Messaging fam
+                </p>
+              )}
             </ScrollArea>
             <div className="flex gap-2">
               <Input
