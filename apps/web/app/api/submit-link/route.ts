@@ -7,7 +7,6 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const { link, roomId } = body;
-
         const maxOrder = await prisma.music.aggregate({
             _max:{order:true},
             where:{roomId:roomId}
@@ -22,6 +21,9 @@ export async function POST(request: NextRequest) {
                 order:newOrder
             }
         });
+
+        console.log("this is response");
+        console.log(response.id);
         if(!response){
             return NextResponse.json({error:"Unable to submit your provided link"});
         }

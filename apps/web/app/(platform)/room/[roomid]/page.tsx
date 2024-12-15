@@ -36,8 +36,8 @@ const RoomPage = () => {
   >([]);
   const [currentMessage, setCurrentMessage] = useState("");
   const [newUser, setNewUser] = useState("");
-  const [participants, setParticipants] = useState<string[]>([""]);
-  const [playList, setPlayList] = useState();
+  const [participants, setParticipants] = useState<string[]>([]);
+  const [playList, setPlayList] = useState<string[]>([]);
   const { user } = useUser();
   const route = useRouter();
   console.log(participants);
@@ -119,37 +119,37 @@ const RoomPage = () => {
           roomId: roomid,
         }),
       });
-
       if (!response.ok) {
         throw new Error(
           "Unable to submit your link , please try after some other time"
         );
       }
-      console.log(response);
+      setMusicLink("");
+      const data = await response.json();
+      console.log("this is your added link");
+      console.log(data);
     } catch (error) {
       console.log(error);
     }
   };
 
   const handleGetMusicList = useCallback(async () => {
-    if (typeof roomid !== "string") {
-      throw new Error("Chal be string laa");
-    }
     try {
-      const response = await prisma.music.aggregate({
-        where: {
-          roomId: roomid,
-        },
-      });
-      console.log(response);
+      const response = await fetch(`/api/get-music-list?roomid=${roomid}`);
+      if (!response.ok) {
+        throw new Error("Unable to fetch music list");
+      }
+      const data = await response.json();
+      setPlayList(data);
     } catch (error) {
       console.log(error);
     }
-  }, [playList]);
-
+  }, [roomid]); 
+  
   useEffect(() => {
     handleGetMusicList();
   }, [handleGetMusicList]);
+  
 
   const handleSendMessage = () => {
     if (socket && user) {
@@ -301,11 +301,15 @@ const RoomPage = () => {
           <BackgroundGradient className="bg-black p-4 h-full">
             <h2 className="text-lg font-semibold mb-2 text-white">Playlist</h2>
             <ScrollArea className="h-[200px]">
-              <ul className="space-y-2 text-white">
-                <li>Song 1 - Artist 1</li>
-                <li>Song 2 - Artist 2</li>
-                <li>Song 3 - Artist 3</li>
-              </ul>
+              {playList && playList.length > 0 ? (
+                <ul className="space-y-2 text-white">
+                  {playList.map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className=" text-white">No playlist available</p>
+              )}
             </ScrollArea>
           </BackgroundGradient>
         </div>
