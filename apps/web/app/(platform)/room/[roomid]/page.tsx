@@ -19,14 +19,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { HashLoader, PuffLoader } from "react-spinners";
 import { BackgroundGradient } from "@/components/ui/background-gradient";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useSocket } from "@/context/SocketContext";
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
 
 const RoomPage = () => {
+  const [verifyLoader, setVerifyLoader] = useState(false);
+  const [submitLinkLoader, setSubmitLinkLoader] = useState(false);
+  const regex = /^https:\/\/www\.youtube\.com\/watch\?v=[\w-]+(&list=[\w-]+)?$/;
   const socket = useSocket();
   const { roomid } = useParams();
   const [musicLink, setMusicLink] = useState("");
@@ -40,25 +42,21 @@ const RoomPage = () => {
   const [playList, setPlayList] = useState<string[]>([]);
   const { user } = useUser();
   const route = useRouter();
-  console.log(participants);
+
   useEffect(() => {
     handleVerifyUser();
   }, []);
 
   useEffect(() => {
-    if (!socket) {
+    if (!socket || verifyLoader) {
       return;
     }
 
     if (user) {
       socket.on("participant_in_room", (data) => {
-        console.log("Data from socket");
         setParticipants(data);
       });
-
       socket.on("live_chat_messages_from_room", (data) => {
-        console.log("live_chat_messages_from_room");
-        console.log(data);
         setChatMessages(data);
       });
 
@@ -76,6 +74,7 @@ const RoomPage = () => {
 
   async function handleVerifyUser() {
     try {
+      setVerifyLoader(true);
       const response = await fetch("/api/verify-user-entering-room", {
         method: "POST",
         headers: {
@@ -99,16 +98,24 @@ const RoomPage = () => {
       }
     } catch (error) {
       console.error("Error during user verification:", error);
+      setVerifyLoader(false);
+    } finally {
+      setVerifyLoader(false);
     }
   }
 
   const handleSubmitLink = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setSubmitLinkLoader(true);
       if (musicLink.length == 0 || !roomid) {
         return alert("Enter a valid music link");
       }
 
+      if (!regex.test(musicLink)) {
+        console.error("Inavlid Url : Please Enter Valid Url");
+        return alert("Inavlid Url : Please Enter Valid Url");
+      }
       const response = await fetch("/api/submit-link", {
         method: "POST",
         headers: {
@@ -119,6 +126,7 @@ const RoomPage = () => {
           roomId: roomid,
         }),
       });
+
       if (!response.ok) {
         throw new Error(
           "Unable to submit your link , please try after some other time"
@@ -126,10 +134,15 @@ const RoomPage = () => {
       }
       setMusicLink("");
       const data = await response.json();
-      console.log("this is your added link");
-      console.log(data);
+      if (data) {
+        await handleGetMusicList();
+        setSubmitLinkLoader(false);
+      }
     } catch (error) {
       console.log(error);
+      setSubmitLinkLoader(false);
+    } finally {
+      setSubmitLinkLoader(false);
     }
   };
 
@@ -140,16 +153,17 @@ const RoomPage = () => {
         throw new Error("Unable to fetch music list");
       }
       const data = await response.json();
+      console.log("This is my music list");
+      console.log(data)
       setPlayList(data);
     } catch (error) {
       console.log(error);
     }
-  }, [roomid]); 
-  
+  }, [roomid]);
+
   useEffect(() => {
     handleGetMusicList();
   }, [handleGetMusicList]);
-  
 
   const handleSendMessage = () => {
     if (socket && user) {
@@ -170,7 +184,11 @@ const RoomPage = () => {
     }
   };
 
-  return (
+  return verifyLoader ? (
+    <div className=" h-screen flex items-center justify-center">
+      <HashLoader size={100} color="#E6E6FA" />
+    </div>
+  ) : (
     <div className="min-h-screen p-4">
       {/* Header */}
       <div className="flex items-center justify-between p-10 mb-10">
@@ -209,7 +227,11 @@ const RoomPage = () => {
                 className="flex-grow"
               />
               <Button type="submit" className="bg-[#1DB954]">
-                Add
+                {submitLinkLoader ? (
+                  <PuffLoader size={20} color="white" />
+                ) : (
+                  "Add"
+                )}
               </Button>
             </form>
           </BackgroundGradient>

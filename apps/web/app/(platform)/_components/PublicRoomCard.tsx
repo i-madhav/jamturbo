@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+"use client"
+
+import React, {useState } from "react";
 import { BackgroundGradient } from "@/components/ui/background-gradient";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
@@ -11,7 +13,7 @@ const PublicRoomCard = () => {
   const { user } = useUser();
   const router = useRouter();
 
-  async function handlePrivateRoomCreation() {
+  async function handlePublicRoomCreation() {
     try {
       setLoader(true);
       const response = await fetch("/api/create-room", {
@@ -22,27 +24,33 @@ const PublicRoomCard = () => {
         body: JSON.stringify({
           title: roomName,
           description: roomDescription,
-          isPrivate: true,
+          isPrivate: false,
           owner: user?.id,
         }),
       });
 
       if (!response.ok) {
         setLoader(false);
-        return alert("Something Went Wrong Couldn't Create Room");
+        alert("Something went wrong. Couldn't create the room.");
+        return;
       }
-      const data = response.json();
-      console.log("This is Data");
-      data.then((data) => router.push(`/room/${data.id}`));
+      const data = await response.json();
+      console.log("This is public room Data");
+      console.log(data.response.id);
+      if(data.id == undefined){
+        router.push('/dashboard');
+      }
+      router.push(`/room/${data.response.id}`);
     } catch (error) {
       setLoader(false);
-      console.log(error);
+      console.error("Error creating room:", error);
+      alert("An error occurred while creating the room.");
     }
   }
 
   return (
     <BackgroundGradient>
-      <div className="group relative bg-[#181818] hover:bg-[#282828] rounded-xl p-6 transition-all duration-300 hover:shadow-xl border border-zinc-800 max-w-lg ">
+      <div className="group relative bg-[#181818] hover:bg-[#282828] rounded-xl p-6 transition-all duration-300 hover:shadow-xl border border-zinc-800 max-w-lg">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
 
         <div>
@@ -55,9 +63,9 @@ const PublicRoomCard = () => {
               stroke="currentColor"
             >
               <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
                 d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
               />
             </svg>
@@ -67,8 +75,7 @@ const PublicRoomCard = () => {
             Create Public Room
           </h3>
           <p className="text-zinc-400 mb-4">
-            Start a public listening session that anyone can join and vibe
-            together.
+            Start a public listening session that anyone can join and vibe together.
           </p>
 
           <div className="space-y-4">
@@ -77,6 +84,7 @@ const PublicRoomCard = () => {
                 type="text"
                 placeholder="Enter room name"
                 className="w-full bg-dark border border-zinc-800 rounded-lg px-4 py-2 text-black placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition-colors"
+                value={roomName}
                 onChange={(e) => setRoomName(e.target.value)}
               />
             </div>
@@ -86,18 +94,22 @@ const PublicRoomCard = () => {
                 type="text"
                 placeholder="Room description (optional)"
                 className="w-full bg-dark border border-zinc-800 rounded-lg px-4 py-2 text-black placeholder-zinc-500 focus:outline-none focus:border-blue-500 transition-colors"
+                value={roomDescription}
                 onChange={(e) => setRoomDescription(e.target.value)}
               />
             </div>
 
-            <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center gap-2">
+            <button
+              type="button"
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center gap-2 relative"
+              onClick={handlePublicRoomCreation}
+              disabled={loader}
+            >
               {loader ? (
                 <FunkyLoader size="small" />
               ) : (
                 <>
-                  <span className=" font-bold font-sans">
-                    Create Public Room
-                  </span>
+                  <span className="font-bold font-sans">Create Public Room</span>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-5 w-5"
@@ -105,9 +117,9 @@ const PublicRoomCard = () => {
                     fill="currentColor"
                   >
                     <path
-                      fill-rule="evenodd"
+                      fillRule="evenodd"
                       d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
-                      clip-rule="evenodd"
+                      clipRule="evenodd"
                     />
                   </svg>
                 </>

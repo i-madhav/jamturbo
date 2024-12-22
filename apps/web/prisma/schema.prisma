@@ -25,9 +25,12 @@ model Room {
 }
 
 model Music {
-  id     Int    @id @default(autoincrement())
-  url    String
-  order  Int    @default(0)
-  roomId String
-  room   Room   @relation(fields: [roomId], references: [id])
+  id          Int    @id @default(autoincrement())
+  videoId     String
+  channelName String
+  videoTitle  String
+  videoImage  String
+  order       Int    @default(0)
+  roomId      String
+  room        Room   @relation(fields: [roomId], references: [id])
 }

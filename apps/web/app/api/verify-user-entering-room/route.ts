@@ -27,6 +27,9 @@ export async function POST(request: NextRequest) {
                 })
             }
         }
+        if(response.isPrivate == false){
+            return NextResponse.json({status:200})
+        }
     } catch (error) {
         return NextResponse.json(error);
     }

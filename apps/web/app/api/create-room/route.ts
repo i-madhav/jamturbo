@@ -2,7 +2,6 @@ import { NextResponse, NextRequest } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
-
 export async function POST(request: NextRequest) {
     try {
         const data = await request.json();
@@ -16,6 +15,10 @@ export async function POST(request: NextRequest) {
             }
         });
 
+        if(response.id == undefined || !response){
+            return NextResponse.json({error:"Your Clerk Id do not exist man"})
+        }
+        console.log(response);
         return NextResponse.json({response});
     } catch (error) {
         return NextResponse.json({ error});

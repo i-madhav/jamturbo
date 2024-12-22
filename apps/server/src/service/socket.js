@@ -20,7 +20,6 @@ export default function handleSocketConnection() {
                      io.to(data.roomId).emit("live_chat_messages_from_room", userMessages);
                 }
             })
-
             if (connectedClients.size) {
                 io.to(data.roomId).emit("participant_in_room", Array.from(connectedClients.values()));
             }
