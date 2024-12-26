@@ -1,11 +1,12 @@
 "use client";
+import YouTube, { YouTubeProps } from "react-youtube";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Users, Send, Play, Pause, UserPlus } from "lucide-react";
+import { Users, Send, UserPlus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,8 @@ import { BackgroundGradient } from "@/components/ui/background-gradient";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useSocket } from "@/context/SocketContext";
+import Image from "next/image";
+import { Item } from "@radix-ui/react-dropdown-menu";
 
 const RoomPage = () => {
   const [verifyLoader, setVerifyLoader] = useState(false);
@@ -39,7 +42,16 @@ const RoomPage = () => {
   const [currentMessage, setCurrentMessage] = useState("");
   const [newUser, setNewUser] = useState("");
   const [participants, setParticipants] = useState<string[]>([]);
-  const [playList, setPlayList] = useState<string[]>([]);
+  const [playList, setPlayList] = useState<
+    {
+      id: string;
+      channelName: string;
+      roomId: string;
+      videoId: string;
+      videoImage: string;
+      videoTitle: string;
+    }[]
+  >([]);
   const { user } = useUser();
   const route = useRouter();
 
@@ -145,7 +157,6 @@ const RoomPage = () => {
       setSubmitLinkLoader(false);
     }
   };
-
   const handleGetMusicList = useCallback(async () => {
     try {
       const response = await fetch(`/api/get-music-list?roomid=${roomid}`);
@@ -154,8 +165,8 @@ const RoomPage = () => {
       }
       const data = await response.json();
       console.log("This is my music list");
-      console.log(data)
-      setPlayList(data);
+      console.log(data.res);
+      setPlayList(data.res);
     } catch (error) {
       console.log(error);
     }
@@ -182,6 +193,18 @@ const RoomPage = () => {
       setParticipants((prev) => [...prev, newUser]);
       setNewUser("");
     }
+  };
+
+  const onEnd = async(event:any) =>{
+    console.log("video finished");
+  }
+
+  const options: YouTubeProps["opts"] = {
+    height: "500",
+    width: "700",
+    playerVars: {
+      autoplay: 1,
+    },
   };
 
   return verifyLoader ? (
@@ -294,27 +317,12 @@ const RoomPage = () => {
         </div>
 
         {/* Now Playing */}
-        <div className="rounded-lg shadow md:col-span-2">
+        <div className="rounded-lg shadow md:col-span-2 h-full">
           <BackgroundGradient className="bg-black h-full p-4">
             <h2 className="text-lg font-semibold mb-2 text-white">
               Now Playing
             </h2>
-            <div className="aspect-video bg-black border-white border mb-4 flex items-center justify-center">
-              <span className="text-white">Video Player</span>
-            </div>
-            <div className="flex justify-center">
-              <Button
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="bg-[#1DB954]"
-              >
-                {isPlaying ? (
-                  <Pause className="mr-2 h-4 w-4" />
-                ) : (
-                  <Play className="mr-2 h-4 w-4" />
-                )}
-                {isPlaying ? "Pause" : "Play"}
-              </Button>
-            </div>
+            <YouTube videoId={playList[0]?.videoId} opts={options} onEnd={onEnd}/>
           </BackgroundGradient>
         </div>
 
@@ -322,11 +330,26 @@ const RoomPage = () => {
         <div className="rounded-lg shadow">
           <BackgroundGradient className="bg-black p-4 h-full">
             <h2 className="text-lg font-semibold mb-2 text-white">Playlist</h2>
-            <ScrollArea className="h-[200px]">
+            <ScrollArea className="h-[27rem]">
               {playList && playList.length > 0 ? (
-                <ul className="space-y-2 text-white">
-                  {playList.map((item, index) => (
-                    <li key={index}>{item}</li>
+                <ul className="space-y-4 text-white">
+                  {playList.map((item) => (
+                    <li key={item.id}>
+                      <div className=" flex items-center gap-2 border border-white rounded-md p-2">
+                        <div>
+                          <Image
+                            src={item.videoImage}
+                            alt="de"
+                            width={100}
+                            height={90}
+                          />
+                        </div>
+                        <div>
+                          <p className=" font-bold">{item.videoTitle}</p>
+                          <p className=" font-semibold">{item.channelName}</p>
+                        </div>
+                      </div>
+                    </li>
                   ))}
                 </ul>
               ) : (

@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
 
         const videoId = extractYouTubeVideoID(link);
 
+
         if (!videoId) {
             return NextResponse.json(
                 { error: "Invalid YouTube URL. Unable to extract video ID." },
@@ -44,14 +45,13 @@ export async function POST(request: NextRequest) {
         });
         const newOrder = (maxOrderResult._max.order ?? -1) + 1;
 
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet,contentDetails,statistics&key=`);
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet,contentDetails,statistics&key=AIzaSyCYiHl9TFomp9Xl7aLNktl6X4vWfEohmlk`);
         if (!res.ok) {
             return NextResponse.json(
                 { error: "Something went wrong" },
                 { status: 404 }
             )
         }
-
         const data = await res.json();
 
         if (!data.items || data.items.length === 0) {
@@ -66,18 +66,13 @@ export async function POST(request: NextRequest) {
         const videoTitle = data.items[0].snippet.localized.title
         const videoImage = data.items[0].snippet.thumbnails.default.url
 
-        const videoObj = {
-            id: id,
-            channelName,
-            videoTitle,
-            videoImage
-        }
-        console.log(videoObj);
 
-        // Create the new music entry
         const newMusic = await prisma.music.create({
             data: {
-                url: videoId,       // You can choose to store videoId instead
+                videoId: id,
+                channelName: channelName,
+                videoTitle: videoTitle,
+                videoImage: videoImage,
                 roomId: roomId,
                 order: newOrder
             }
