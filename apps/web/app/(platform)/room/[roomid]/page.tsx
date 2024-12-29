@@ -26,10 +26,10 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useSocket } from "@/context/SocketContext";
 import Image from "next/image";
-import { Item } from "@radix-ui/react-dropdown-menu";
 
 const RoomPage = () => {
   const [verifyLoader, setVerifyLoader] = useState(false);
+  let isPublic;
   const [submitLinkLoader, setSubmitLinkLoader] = useState(false);
   const regex = /^https:\/\/www\.youtube\.com\/watch\?v=[\w-]+(&list=[\w-]+)?$/;
   const socket = useSocket();
@@ -60,29 +60,27 @@ const RoomPage = () => {
   }, []);
 
   useEffect(() => {
-    if (!socket || verifyLoader) {
+    if (!socket || verifyLoader || !user) {
       return;
     }
 
-    if (user) {
-      socket.on("participant_in_room", (data) => {
-        setParticipants(data);
-      });
-      socket.on("live_chat_messages_from_room", (data) => {
-        setChatMessages(data);
-      });
+    socket.on("participant_in_room", (data) => {
+      setParticipants(data);
+    });
+    socket.on("live_chat_messages_from_room", (data) => {
+      setChatMessages(data);
+    });
 
-      socket.emit("join_room_user", {
-        email: user?.primaryEmailAddress?.emailAddress,
-        roomId: roomid,
-      });
+    socket.emit("join_room_user", {
+      email: user?.primaryEmailAddress?.emailAddress,
+      roomId: roomid,
+    });
 
-      socket.emit("user_in_room_chat_message", {
-        email: user.primaryEmailAddress?.emailAddress,
-        message: currentMessage,
-      });
-    }
-  }, [socket, user]);
+    socket.emit("user_in_room_chat_message", {
+      email: user.primaryEmailAddress?.emailAddress,
+      message: currentMessage,
+    });
+  }, [socket, user, verifyLoader]);
 
   async function handleVerifyUser() {
     try {
@@ -100,6 +98,10 @@ const RoomPage = () => {
 
       if (response.ok) {
         const data = await response.json();
+        setVerifyLoader(false);
+        if (data.isPublicRoom) {
+          isPublic = true;
+        }
         if (data.redirect) {
           route.push(data.redirect);
         } else {
@@ -164,8 +166,7 @@ const RoomPage = () => {
         throw new Error("Unable to fetch music list");
       }
       const data = await response.json();
-      console.log("This is my music list");
-      console.log(data.res);
+      console.log(data);
       setPlayList(data.res);
     } catch (error) {
       console.log(error);
@@ -195,18 +196,41 @@ const RoomPage = () => {
     }
   };
 
-  const onEnd = async(event:any) =>{
-    console.log("video finished");
-  }
+  const onEnd = async (id: string) => {
+    try {
+      const response = await fetch("/api/remove-song", {
+        method: "POST",
+        headers: {
+          "Content-type": "application/json",
+        },
+        body: JSON.stringify({
+          id: id,
+          roomId: roomid,
+        }),
+      });
+      if (response.ok) {
+        await handleGetMusicList();
+      } else {
+        console.log("Unable to delete the music");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const options: YouTubeProps["opts"] = {
     height: "500",
     width: "700",
     playerVars: {
-      autoplay: 1,
+      autoplay: true,
+      controls: 0,
+      disablekb: 1,
+      modestbranding: 1,
+      fs: 0,
+      rel: 0,
+      showinfo: 0,
     },
   };
-
   return verifyLoader ? (
     <div className=" h-screen flex items-center justify-center">
       <HashLoader size={100} color="#E6E6FA" />
@@ -234,7 +258,6 @@ const RoomPage = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-
       {/* Main Grid */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Music Link Input and Search */}
@@ -259,7 +282,6 @@ const RoomPage = () => {
             </form>
           </BackgroundGradient>
         </div>
-
         {/* Participants */}
         <div className="rounded-lg shadow">
           <BackgroundGradient className="bg-black p-4">
@@ -267,9 +289,11 @@ const RoomPage = () => {
               <h2 className="text-lg font-bold text-white">Participants</h2>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <UserPlus className="h-4 w-4" />
-                  </Button>
+                  {isPublic && (
+                    <Button variant="outline" size="icon">
+                      <UserPlus className="h-4 w-4" />
+                    </Button>
+                  )}
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -322,7 +346,18 @@ const RoomPage = () => {
             <h2 className="text-lg font-semibold mb-2 text-white">
               Now Playing
             </h2>
-            <YouTube videoId={playList[0]?.videoId} opts={options} onEnd={onEnd}/>
+            {playList.length > 0 ? (
+              <div className="relative">
+                <YouTube
+                  videoId={playList[0]?.videoId}
+                  opts={options}
+                  onEnd={() => onEnd(playList[0]!.id)}
+                />
+                {/* Overlay to prevent interactions */}
+              </div>
+            ) : (
+              <p>No music in the playlist yet</p>
+            )}
           </BackgroundGradient>
         </div>
 

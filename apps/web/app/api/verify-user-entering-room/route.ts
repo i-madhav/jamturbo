@@ -15,7 +15,6 @@ export async function POST(request: NextRequest) {
         if (!response) {
             return NextResponse.json({ error: "The room you are trying to access doesn't exist" })
         }
-
         if (response.isPrivate) {
             const haveAccess = response.shareWith.some((item) => item == userId)
             const isOwner = userId == response.ownerId;
@@ -28,8 +27,9 @@ export async function POST(request: NextRequest) {
             }
         }
         if(response.isPrivate == false){
-            return NextResponse.json({status:200})
+            return NextResponse.json({status:200,isPublicRoom:true});
         }
+        
     } catch (error) {
         return NextResponse.json(error);
     }
