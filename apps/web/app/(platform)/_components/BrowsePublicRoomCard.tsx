@@ -1,6 +1,6 @@
 import React from "react";
 import { BackgroundGradient } from "@/components/ui/background-gradient";
-
+import Link from "next/link";
 const BrowsePublicRoomCard = () => {
   return (
     <BackgroundGradient>
@@ -53,7 +53,7 @@ const BrowsePublicRoomCard = () => {
               </div>
             </div>
 
-            <button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center gap-2 group">
+            <Link href={"/BrowseRoom"} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center gap-2 group">
               <span className=" font-bold font-sans">Explore Rooms</span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -67,7 +67,7 @@ const BrowsePublicRoomCard = () => {
                   clip-rule="evenodd"
                 />
               </svg>
-            </button>
+            </Link>
 
             <div className="mt-4 flex items-center gap-2 text-zinc-500">
               <svg

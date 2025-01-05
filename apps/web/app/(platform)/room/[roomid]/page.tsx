@@ -1,7 +1,7 @@
 "use client";
 import YouTube, { YouTubeProps } from "react-youtube";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -29,13 +29,13 @@ import Image from "next/image";
 
 const RoomPage = () => {
   const [verifyLoader, setVerifyLoader] = useState(false);
-  let isPublic;
+  const[isPublic,setIsPublic] = useState(false);
+  const[isPrivate,setIsPrivate] = useState(false);
   const [submitLinkLoader, setSubmitLinkLoader] = useState(false);
   const regex = /^https:\/\/www\.youtube\.com\/watch\?v=[\w-]+(&list=[\w-]+)?$/;
   const socket = useSocket();
   const { roomid } = useParams();
   const [musicLink, setMusicLink] = useState("");
-  const [isPlaying, setIsPlaying] = useState(false);
   const [chatMessages, setChatMessages] = useState<
     { user: string; message: string }[]
   >([]);
@@ -54,36 +54,12 @@ const RoomPage = () => {
   >([]);
   const { user } = useUser();
   const route = useRouter();
+  const playerRef = useRef<YouTube | null>(null);
 
-  useEffect(() => {
-    handleVerifyUser();
-  }, []);
 
-  useEffect(() => {
-    if (!socket || verifyLoader || !user) {
-      return;
-    }
-
-    socket.on("participant_in_room", (data) => {
-      setParticipants(data);
-    });
-    socket.on("live_chat_messages_from_room", (data) => {
-      setChatMessages(data);
-    });
-
-    socket.emit("join_room_user", {
-      email: user?.primaryEmailAddress?.emailAddress,
-      roomId: roomid,
-    });
-
-    socket.emit("user_in_room_chat_message", {
-      email: user.primaryEmailAddress?.emailAddress,
-      message: currentMessage,
-    });
-  }, [socket, user, verifyLoader]);
-
-  async function handleVerifyUser() {
+  const handleVerifyUser = useCallback(async () => {
     try {
+      if (!roomid || !user?.id) return;
       setVerifyLoader(true);
       const response = await fetch("/api/verify-user-entering-room", {
         method: "POST",
@@ -98,15 +74,22 @@ const RoomPage = () => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log(data);
         setVerifyLoader(false);
         if (data.isPublicRoom) {
-          isPublic = true;
+          setIsPublic(true);
+        } else {
+          setIsPrivate(true);
         }
+        //
         if (data.redirect) {
+          console.log("I got inside data.redirect when i refresh my page");
           route.push(data.redirect);
         } else {
           console.error("No redirection path provided");
         }
+        //
+
       } else {
         console.error("Error verifying user");
       }
@@ -116,7 +99,7 @@ const RoomPage = () => {
     } finally {
       setVerifyLoader(false);
     }
-  }
+  }, [roomid, user?.id]);
 
   const handleSubmitLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,16 +149,11 @@ const RoomPage = () => {
         throw new Error("Unable to fetch music list");
       }
       const data = await response.json();
-      console.log(data);
       setPlayList(data.res);
     } catch (error) {
       console.log(error);
     }
   }, [roomid]);
-
-  useEffect(() => {
-    handleGetMusicList();
-  }, [handleGetMusicList]);
 
   const handleSendMessage = () => {
     if (socket && user) {
@@ -218,19 +196,75 @@ const RoomPage = () => {
     }
   };
 
+  const onReady = (event:any) => {
+    console.log("this is ref")
+    playerRef.current = event.target;
+    event.target.playVideo();
+    console.log(playerRef.current?.getInternalPlayer().getCurrentTime());
+  }
+
   const options: YouTubeProps["opts"] = {
     height: "500",
     width: "700",
     playerVars: {
-      autoplay: true,
-      controls: 0,
+      autoplay: 1,
+      mute: 1, 
+      controls: 1,
       disablekb: 1,
       modestbranding: 1,
       fs: 0,
       rel: 0,
-      showinfo: 0,
+      showinfo: 1,
     },
   };
+  
+  useEffect(() => {
+    handleVerifyUser();
+  }, [roomid, user?.id]);
+
+  useEffect(() => {
+    if (!socket || verifyLoader || !user) {
+      return;
+    }
+
+    socket.on("participant_in_room", (data) => {
+      setParticipants(data);
+    });
+    socket.on("live_chat_messages_from_room", (data) => {
+      setChatMessages(data);
+    });
+
+    socket.emit("join_room_user", {
+      email: user?.primaryEmailAddress?.emailAddress,
+      roomId: roomid,
+    });
+
+    socket.emit("user_in_room_chat_message", {
+      email: user.primaryEmailAddress?.emailAddress,
+      message: currentMessage,
+    });
+  }, [socket, user, verifyLoader]);
+
+  useEffect(() => {
+    handleGetMusicList();
+  }, [handleGetMusicList]);
+
+  useEffect(() =>{
+    const interval = setInterval(() =>{
+      const currentTime = playerRef?.current?.getInternalPlayer().getCurrentTime();
+      localStorage.setItem("videoTimeStamp",currentTime);
+    },1000);
+
+    return () => clearInterval(interval);
+  },[])
+
+  useEffect(() =>{
+    const savedTime = localStorage.getItem("videoTimeStamp");
+    if(savedTime && playerRef.current){
+      playerRef.current.getInternalPlayer().seekTo(parseFloat(savedTime), true);
+    }
+  },[playerRef.current]);
+
   return verifyLoader ? (
     <div className=" h-screen flex items-center justify-center">
       <HashLoader size={100} color="#E6E6FA" />
@@ -289,7 +323,7 @@ const RoomPage = () => {
               <h2 className="text-lg font-bold text-white">Participants</h2>
               <Dialog>
                 <DialogTrigger asChild>
-                  {isPublic && (
+                  {isPrivate && (
                     <Button variant="outline" size="icon">
                       <UserPlus className="h-4 w-4" />
                     </Button>
@@ -352,6 +386,7 @@ const RoomPage = () => {
                   videoId={playList[0]?.videoId}
                   opts={options}
                   onEnd={() => onEnd(playList[0]!.id)}
+                  onReady={onReady}
                 />
                 {/* Overlay to prevent interactions */}
               </div>
