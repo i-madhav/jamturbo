@@ -168,6 +168,6 @@ export default {
 			textColor: ['active', 'disabled'],
 		},
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: ["tailwindcss-animate"],
 }
 
