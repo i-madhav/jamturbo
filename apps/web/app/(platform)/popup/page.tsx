@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import Script from "next/script";
 
 interface Order {
@@ -33,7 +34,7 @@ interface RazorpayOptions {
 
 const Page = () => {
   const [isOpen, setIsOpen] = useState(true);
-
+  const router = useRouter();
   const paymentHandler = async (e: React.MouseEvent<HTMLButtonElement>) => {
     const order: Order = {
       amount: 500,
@@ -107,6 +108,10 @@ const Page = () => {
     }
   };
 
+  const handleCross = () =>{
+    router.push("/dashboard");
+  }
+
   return (
     <>
       <Script
@@ -122,7 +127,7 @@ const Page = () => {
             <div className="relative w-full max-w-md p-8 overflow-hidden text-left bg-zinc-900 border border-zinc-800 rounded-2xl">
               <div className="absolute top-4 right-4">
                 <button
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => handleCross}
                   className="text-zinc-400 hover:text-white transition-colors"
                 >
                   <svg
@@ -176,7 +181,7 @@ const Page = () => {
                     Upgrade to Premium
                   </button>
                   <button
-                    onClick={() => setIsOpen(false)}
+                    onClick={handleCross}
                     className="w-full py-3 px-4 border border-zinc-700 text-zinc-400 font-semibold rounded-lg hover:bg-zinc-800 transition-colors"
                   >
                     Maybe Later

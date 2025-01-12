@@ -31,8 +31,15 @@ const PrivateRoomCard = () => {
         setLoader(false);
         return alert("Something Went Wrong Couldn't Create Room");
       }
-      const data = response.json();
-      data.then((data) => router.push(`/room/${data.response.id}`));
+      const data = await response.json();
+      if(data.response.id){
+        router.push(`/room/${data.response.id}`)
+      }
+
+      if(data.response.direct){
+        router.push("/popup");
+      }
+
     } catch (error) {
       setLoader(false);
       console.log(error);

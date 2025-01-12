@@ -6,6 +6,21 @@ export async function POST(request: NextRequest) {
     try {
         const data = await request.json();
         const { title, description, isPrivate , owner} = data;
+        const room = await prisma.room.findMany({
+            where:{
+                ownerId:owner
+            }
+        });
+        console.log("This is room data");
+        console.log(room);
+
+        if(room.length > 2){
+            return NextResponse.json({status:400,response:{
+                direct:"/popup",
+                reason:"Subscribe in order to create more room"
+            }});
+        }
+
         const response = await prisma.room.create({
             data: {
                 title,
