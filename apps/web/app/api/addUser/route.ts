@@ -3,7 +3,6 @@ import { PrismaClient } from "@prisma/client";
 
 export default async function POST(request: NextRequest) {
     const prisma = new PrismaClient();
-    
     try {
         const body = await request.json();
         const { roomId, userEmail } = body;
@@ -33,7 +32,6 @@ export default async function POST(request: NextRequest) {
         if (!room) {
             return NextResponse.json({ status: 404, response: "Room not found" });
         }
-
         return NextResponse.json({ status: 200, response: "User added to room successfully", room });
 
     } catch (error) {
