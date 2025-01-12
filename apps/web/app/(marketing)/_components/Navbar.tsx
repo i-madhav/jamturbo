@@ -71,8 +71,8 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed w-full z-50 top-4">
-      <div className="mx-auto max-w-7xl px-6">
+    <nav className="fixed w-full  z-50 top-4">
+      <div className="m-auto max-w-5xl px-6 shadow-white shadow-xl rounded-lg">
         <nav className="flex items-center justify-between backdrop-blur-xl bg-black/30 rounded-full px-6 py-3">
           <div className="flex items-center">
             <a href="/" className="text-white font-display text-2xl font-bold">
@@ -92,12 +92,6 @@ const Navbar = () => {
             >
               Pricing
             </a>
-            <a
-              href="#about"
-              className="text-gray-300 hover:text-white transition"
-            >
-              About
-            </a>
           </div>
           <div className="flex items-center space-x-4">
             <Link
@@ -108,7 +102,7 @@ const Navbar = () => {
             </Link>
             <Link
               href="/sign-up"
-              className="bg-primary-600 text-white px-6 py-2 rounded-full hover:bg-primary-700 transition"
+              className="bg-purple-500 text-white px-6 py-2 rounded-full hover:bg-primary-700 transition"
             >
               Get Started
             </Link>

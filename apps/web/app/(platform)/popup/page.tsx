@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 
@@ -33,7 +33,6 @@ interface RazorpayOptions {
 }
 
 const Page = () => {
-  const [isOpen, setIsOpen] = useState(true);
   const router = useRouter();
   const paymentHandler = async (e: React.MouseEvent<HTMLButtonElement>) => {
     const order: Order = {
@@ -119,7 +118,7 @@ const Page = () => {
         strategy="beforeInteractive"
       />
       <div id="root" className="min-h-screen bg-black">
-        {isOpen && (
+
           <section
             id="PopupOverlay"
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
@@ -190,7 +189,6 @@ const Page = () => {
               </div>
             </div>
           </section>
-        )}
       </div>
     </>
   );

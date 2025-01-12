@@ -40,7 +40,6 @@ const PublicRoomCard = () => {
       if(data.id == undefined){
         router.push('/dashboard');
       }
-
       if(data.response.id){
         router.push(`/room/${data.response.id}`)
       }
@@ -48,7 +47,7 @@ const PublicRoomCard = () => {
       if(data.response.direct){
         router.push("/popup");
       }
-
+      
     } catch (error) {
       setLoader(false);
       console.error("Error creating room:", error);

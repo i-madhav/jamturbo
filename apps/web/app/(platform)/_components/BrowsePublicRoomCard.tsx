@@ -49,7 +49,6 @@ const BrowsePublicRoomCard = () => {
                     className="w-6 h-6 rounded-full ring-2 ring-dark"
                   />
                 </div>
-                <span className="text-zinc-400 text-sm">234 active rooms</span>
               </div>
             </div>
 
