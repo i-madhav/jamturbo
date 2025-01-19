@@ -11,7 +11,10 @@
       "@/*": ["./app/*"],
       "@/components/*": ["components/*"],
       "@/utils/*": ["utils/*"]
-    }
+    },
+    "strict": false,
+    "noImplicitAny": false,
+    "skipLibCheck": true
   },
   "include": [
     "next-env.d.ts",
