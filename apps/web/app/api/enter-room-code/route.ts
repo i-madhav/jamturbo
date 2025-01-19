@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
         }
 
         if (response?.isPrivate) {
-            const haveAccess = response.shareWith.some((user) => user == userId);
+            const haveAccess = response.shareWith.some((user:string) => user == userId);
             const isOwner = response.ownerId == userId;
             if (!haveAccess && !isOwner) {
                 return NextResponse.json({
