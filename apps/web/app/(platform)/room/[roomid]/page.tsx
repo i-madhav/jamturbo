@@ -23,14 +23,15 @@ import {
 import { HashLoader, PuffLoader } from "react-spinners";
 import { BackgroundGradient } from "@/components/ui/background-gradient";
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { SignOutButton, useUser } from "@clerk/nextjs";
 import { useSocket } from "@/context/SocketContext";
 import Image from "next/image";
+import userImage from "../../../../public/user-icon-svgrepo-com.svg";
 
 const RoomPage = () => {
   const [verifyLoader, setVerifyLoader] = useState(false);
-  const[isPublic,setIsPublic] = useState(false);
-  const[isPrivate,setIsPrivate] = useState(false);
+  const [isPublic, setIsPublic] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
   const [submitLinkLoader, setSubmitLinkLoader] = useState(false);
   const regex = /^https:\/\/www\.youtube\.com\/watch\?v=[\w-]+(&list=[\w-]+)?$/;
   const socket = useSocket();
@@ -55,7 +56,6 @@ const RoomPage = () => {
   const { user } = useUser();
   const route = useRouter();
   const playerRef = useRef<YouTube | null>(null);
-
 
   const handleVerifyUser = useCallback(async () => {
     try {
@@ -89,7 +89,6 @@ const RoomPage = () => {
           console.error("No redirection path provided");
         }
         //
-
       } else {
         console.error("Error verifying user");
       }
@@ -142,9 +141,19 @@ const RoomPage = () => {
       setSubmitLinkLoader(false);
     }
   };
+
   const handleGetMusicList = useCallback(async () => {
     try {
-      const response = await fetch(`/api/get-music-list?roomid=${roomid}`);
+      const response = await fetch(`/api/get-music-list`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          roomid,
+        }),
+      });
+
       if (!response.ok) {
         throw new Error("Unable to fetch music list");
       }
@@ -196,19 +205,19 @@ const RoomPage = () => {
     }
   };
 
-  const onReady = (event:any) => {
-    console.log("this is ref")
+  const onReady = (event: any) => {
+    console.log("this is ref");
     playerRef.current = event.target;
     event.target.playVideo();
     console.log(playerRef.current?.getInternalPlayer().getCurrentTime());
-  }
+  };
 
   const options: YouTubeProps["opts"] = {
     height: "500",
     width: "700",
     playerVars: {
       autoplay: 1,
-      mute: 1, 
+      mute: 1,
       controls: 1,
       disablekb: 1,
       modestbranding: 1,
@@ -217,7 +226,7 @@ const RoomPage = () => {
       showinfo: 1,
     },
   };
-  
+
   useEffect(() => {
     handleVerifyUser();
   }, [roomid, user?.id]);
@@ -249,21 +258,23 @@ const RoomPage = () => {
     handleGetMusicList();
   }, [handleGetMusicList]);
 
-  useEffect(() =>{
-    const interval = setInterval(() =>{
-      const currentTime = playerRef?.current?.getInternalPlayer().getCurrentTime();
-      localStorage.setItem("videoTimeStamp",currentTime);
-    },1000);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentTime = playerRef?.current
+        ?.getInternalPlayer()
+        .getCurrentTime();
+      localStorage.setItem("videoTimeStamp", currentTime);
+    }, 1000);
 
     return () => clearInterval(interval);
-  },[])
+  }, []);
 
-  useEffect(() =>{
+  useEffect(() => {
     const savedTime = localStorage.getItem("videoTimeStamp");
-    if(savedTime && playerRef.current){
+    if (savedTime && playerRef.current) {
       playerRef.current.getInternalPlayer().seekTo(parseFloat(savedTime), true);
     }
-  },[playerRef.current]);
+  }, [playerRef.current]);
 
   return verifyLoader ? (
     <div className=" h-screen flex items-center justify-center">
@@ -283,11 +294,15 @@ const RoomPage = () => {
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger className="bg-black text-white rounded-full font-medium w-10 h-10 flex items-center justify-center">
-            M
+            <Image src={userImage} alt="user" className="w-8 rounded-full" />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="bg-white bg-opacity-70 backdrop-blur-lg rounded-lg shadow-xl">
             <DropdownMenuItem className="focus:bg-gray-200 focus:bg-opacity-70">
-              <p className="font-medium text-gray-800">Guest-User</p>
+              <SignOutButton redirectUrl="/">
+                <button className=" bg-red-400 p-3 font-semibold rounded-lg w-full">
+                  Sign-Out
+                </button>
+              </SignOutButton>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
