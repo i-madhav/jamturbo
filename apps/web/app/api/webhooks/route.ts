@@ -1,9 +1,11 @@
 import { Webhook } from 'svix'
 import { headers } from 'next/headers'
 import { WebhookEvent } from '@clerk/nextjs/server'
+import { PrismaClient } from '@prisma/client'
 
 export async function POST(req: Request) {
   const SIGNING_SECRET = process.env.SIGNING_SECRET
+  const prisma = new PrismaClient();
 
   if (!SIGNING_SECRET) {
     throw new Error('Error: Please add SIGNING_SECRET from Clerk Dashboard to .env or .env.local')
@@ -44,13 +46,14 @@ export async function POST(req: Request) {
       status: 400,
     })
   }
-
-  // Do something with payload
-  // For this guide, log payload to console
-  const { id } = evt.data
+  
   const eventType = evt.type
-  console.log(`Received webhook with ID ${id} and event type of ${eventType}`)
-  console.log('Webhook payload:', body)
+  if(eventType === "user.created"){
+    const response = await prisma.user.create({data:{clerkUserId:evt.data.id,email:evt.data.email_addresses[0]!.email_address}});
+    if(response){
+      console.log(response);
+    }
+  }
 
-  return new Response('Webhook received', { status: 200 })
+  return new Response('Webhook received', { status: 200 });
 }

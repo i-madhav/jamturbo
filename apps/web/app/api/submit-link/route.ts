@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         });
         const newOrder = (maxOrderResult._max.order ?? -1) + 1;
 
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet,contentDetails,statistics&key=AIzaSyCYiHl9TFomp9Xl7aLNktl6X4vWfEohmlk`);
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet,contentDetails,statistics&key=${process.env.YOUTUBE_API_KEY}`);
         if (!res.ok) {
             return NextResponse.json(
                 { error: "Something went wrong" },
