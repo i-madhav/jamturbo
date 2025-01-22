@@ -46,13 +46,11 @@ export async function POST(req: Request) {
       status: 400,
     })
   }
-  
+
   const eventType = evt.type
-  // if(eventType === "user.created"){
-  //   const response = await prisma.user.create({data:{clerkUserId:evt.data.id,email:evt.data.email_addresses[0]!.email_address}});
-  //   if(response){
-  //     console.log(response);
-  //   }
-  // }
+  if (eventType === "user.created") {
+    const response = await prisma.user.create({ data: { clerkUserId: evt.data.id, email: evt.data.email_addresses[0]!.email_address } });
+    console.log(response);
+  }
   return new Response('Webhook received', { status: 200 });
 }
