@@ -46,11 +46,21 @@ export async function POST(req: Request) {
       status: 400,
     })
   }
+  try {
+    if (evt.type === "user.created") {
+      const response = await prisma.user.create({
+        data: {
+          clerkUserId: evt.data.id,
+          email: evt.data.email_addresses[0].email_address
+        }
 
-  const eventType = evt.type
-  if (eventType === "user.created") {
-    const response = await prisma.user.create({ data: { clerkUserId: evt.data.id, email: evt.data.email_addresses[0]!.email_address } });
-    console.log(response);
+      });
+      console.log('User created:', response);
+    }
+
+    return new Response('Success', { status: 201 });
+  } catch (error) {
+    console.error('Database error:', error);
+    return new Response('Error creating user', { status: 500 });
   }
-  return new Response('Webhook received', { status: 200 });
 }
