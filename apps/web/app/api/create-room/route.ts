@@ -12,12 +12,12 @@ export async function POST(request: NextRequest) {
             }
         });
 
-        // if(room.length > 2){
-        //     return NextResponse.json({status:400,response:{
-        //         direct:"/popup",
-        //         reason:"Subscribe in order to create more room"
-        //     }});
-        // }
+        if(room.length > 2){
+            return NextResponse.json({status:400,response:{
+                direct:"/popup",
+                reason:"Subscribe in order to create more room"
+            }});
+        }
 
         const response = await prisma.room.create({
             data: {
