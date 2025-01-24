@@ -237,6 +237,7 @@ const RoomPage = () => {
     }
 
     socket.on("participant_in_room", (data) => {
+      console.log(data);
       setParticipants(data);
     });
     socket.on("live_chat_messages_from_room", (data) => {
